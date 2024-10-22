@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gráfica de una Ecuación Lineal con Zoom</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-image: url('fondo.jpg');
+            background-size: full;
+            background-position: center;
+            margin: 0;
+            height: 100vh;
+            position: relative;
+        }
+        canvas {
+            border: 1px solid black;
+            background-color: rgba(255, 255, 255, 0.8);
+        }
+        .easter-egg {
+			position: absolute;
+            width: 100px;
+            opacity: 0.001;
+            top: 5%;
+            left: 90%;
+            transition: opacity 0.3s;
+        }
+        .easter-egg:hover {
+            opacity: 1;
+        }
+        input, button {
+            margin: 10px;
+            padding: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Graficar Ecuación Lineal</h1>
+    <p>Ingrese los valores de la ecuación de la forma <strong>y = mx + b</strong></p>
+    
+    <label for="m">Pendiente (m):</label>
+    <input type="number" id="m" step="any" value=""><br>
+    
+    <label for="b">Intersección (b):</label>
+    <input type="number" id="b" step="any" value=""><br>
+    
+    <button onclick="graficar()">Graficar</button>
+    
+    <canvas id="canvas" width="600" height="600"></canvas>
+	
+	<img src="easter-egg.png" class="easter-egg" alt="Easter Egg">
+
+    <script>
+        var zoomScale = 1; // Factor de zoom inicial
+        var baseScale = 20; // Escala base sin zoom
+        var scale = baseScale; // Escala actual
+        var offsetX = 0; // Desplazamiento en X
+        var offsetY = 0; // Desplazamiento en Y
+
+        // Función para dibujar la gráfica
+        function graficar() {
+            var canvas = document.getElementById('canvas');
+            var ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);  // Limpiar el canvas
+
+            var m = parseFloat(document.getElementById('m').value);  // Obtener el valor de la pendiente
+            var b = parseFloat(document.getElementById('b').value);  // Obtener el valor de la intersección
+
+            var width = canvas.width;
+            var height = canvas.height;
+
+            // Ajustar la escala actual con el zoom
+            scale = baseScale * zoomScale;
+
+            // Dibujar el eje X y el eje Y
+            ctx.beginPath();
+            ctx.moveTo(0, height / 2 - offsetY);
+            ctx.lineTo(width, height / 2 - offsetY);  // Eje X
+            ctx.moveTo(width / 2 + offsetX, 0);
+            ctx.lineTo(width / 2 + offsetX, height);  // Eje Y
+            ctx.strokeStyle = 'black';
+            ctx.stroke();
+
+            // Dibujar marcas y números en el eje X y Y
+            ctx.font = '12px Arial';
+            ctx.fillStyle = 'black';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            // Marcas y números en el eje X
+            for (var x = -width; x <= width; x += scale) { // Ampliar rango de X
+                var xCanvas = width / 2 + x + offsetX;
+                ctx.beginPath();
+                ctx.moveTo(xCanvas, height / 2 - offsetY - 5);
+                ctx.lineTo(xCanvas, height / 2 - offsetY + 5);
+                ctx.stroke();
+                if (x !== 0) {
+                    ctx.fillText((x / scale).toFixed(0), xCanvas, height / 2 - offsetY + 15);
+                }
+            }
+
+            // Marcas y números en el eje Y
+            for (var y = -height; y <= height; y += scale) { // Ampliar rango de Y
+                var yCanvas = height / 2 - y - offsetY;
+                ctx.beginPath();
+                ctx.moveTo(width / 2 + offsetX - 5, yCanvas);
+                ctx.lineTo(width / 2 + offsetX + 5, yCanvas);
+                ctx.stroke();
+                if (y !== 0) {
+                    ctx.fillText((y / scale).toFixed(0), width / 2 + offsetX - 15, yCanvas);
+                }
+            }
+
+            // Dibujar la ecuación lineal y = mx + b
+            ctx.beginPath();
+            ctx.strokeStyle = 'red';
+
+            var x1 = -width;
+            var y1 = m * (x1 / scale) + b;
+
+            var x2 = width;
+            var y2 = m * (x2 / scale) + b;
+
+            // Ajustar las coordenadas al canvas
+            ctx.moveTo(width / 2 + x1 + offsetX, height / 2 - y1 * scale - offsetY);
+            ctx.lineTo(width / 2 + x2 + offsetX, height / 2 - y2 * scale - offsetY);
+
+            ctx.stroke();
+        }
+
+        // Función para manejar el zoom y desplazamiento con la rueda del ratón
+        document.getElementById('canvas').addEventListener('wheel', function(event) {
+            event.preventDefault();  // Prevenir el scroll de la página
+            var delta = event.deltaY > 0 ? 0.9 : 1.1;  // Ajuste del factor de zoom
+            zoomScale *= delta;
+            if (zoomScale < 2) zoomScale = 2;  // Evitar zoom demasiado pequeño
+            if (zoomScale > 5) zoomScale = 5;  // Evitar zoom demasiado grande
+            graficar();  // Redibujar con el nuevo zoom
+        });
+
+        // Función para manejar el desplazamiento
+        var isDragging = false;
+        var startX, startY;
+
+        canvas.addEventListener('mousedown', function(event) {
+            isDragging = true;
+            startX = event.offsetX - offsetX;
+            startY = event.offsetY + offsetY;
+        });
+
+        canvas.addEventListener('mouseup', function() {
+            isDragging = false;
+        });
+
+        canvas.addEventListener('mousemove', function(event) {
+            if (isDragging) {
+                offsetX = event.offsetX - startX;
+                offsetY = startY - event.offsetY;
+                graficar();  // Redibujar con el nuevo desplazamiento
+            }
+        });
+
+        // Inicializar la gráfica al cargar la página
+        window.onload = graficar;
+    </script>
+</body>
+</html>
