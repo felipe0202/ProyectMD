@@ -4,9 +4,80 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gráfica de una Ecuación Lineal con Zoom</title>
-    
+    <style>
+
+        body {
+            font-family: 'Verdana', sans-serif;
+            text-align: center;
+            background: linear-gradient(to bottom, #ffffff, #d1e0ff);
+            margin: 0;
+            color: #004080; /* Azul suave para contrastar */
+            position: relative;
+            overflow-x: hidden; /* Evitar scroll lateral innecesario */
+        }
+
+        h1 {
+            color: #003366; /* Azul oscuro para mayor contraste */
+        }
+
+        canvas {
+            border: 1px solid black;
+            background-color: rgba(255, 255, 255, 0.8);
+            display: block;
+            margin: 0 auto; /* Centrar el canvas */
+            max-width: 80%; /* Limitar el ancho máximo en pantallas grandes */
+            height: auto; /* Mantener la proporción del canvas */
+            margin-bottom: 20px; /* Evitar que toque el borde inferior */
+        }
+
+        input, button {
+            margin: 10px;
+            padding: 5px;
+            color: #004080; /* Azul suave */
+        }
+
+        .input-neon {
+            border-radius: 20px;
+            padding: 10px;
+            border: 2px solid #008cba;
+            outline: none;
+            transition: box-shadow 0.3s ease-in-out;
+        }
+
+        .input-neon:focus {
+            box-shadow: 0 0 10px #007ba7;
+        }
+
+        button {
+            background-color: #008cba;
+            color: white;
+            border-radius: 20px;
+            padding: 10px 20px;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #007ba7;
+        }
+
+        /* Evitar márgenes adicionales y ajustar la altura del body */
+        html, body {
+            height: 100%;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            min-height: 100vh; /* Asegurar que el contenido ocupe toda la pantalla */
+        }
+
+    </style>
 </head>
 <body>
+    <div>
     <h1>Graficar Ecuación Lineal</h1>
     <p>Ingrese los valores de la ecuación de la forma <strong>y = mx + b</strong></p>
     
@@ -17,9 +88,12 @@
     <input type="number" id="b" step="any" value="" class="input-neon"><br>
     
     <button onclick="graficar()">Graficar</button>
+    </div>
+    <div>
+    <canvas id="canvas"></canvas>
+    </div>
     
-    <canvas id="canvas" width="600" height="600"></canvas>
-    
+
     <script>
         var zoomScale = 1; // Factor de zoom inicial
         var baseScale = 20; // Escala base sin zoom
@@ -30,6 +104,16 @@
         var startX, startY; // Posición inicial para el desplazamiento
         var initialPinchDistance = null; // Distancia inicial entre dos dedos
         var lastPinchZoomScale = 1; // Zoom previo al gesto de pinza
+
+        // Función para ajustar el tamaño del canvas de manera responsive
+        function ajustarCanvas() {
+            var canvas = document.getElementById('canvas');
+            var containerWidth = canvas.parentElement.clientWidth;
+            var containerHeight = window.innerHeight * 0.6; // 60% de la altura de la ventana
+            canvas.width = containerWidth;
+            canvas.height = containerHeight;
+            graficar(); // Redibujar la gráfica
+        }
 
         function graficar() {
             var canvas = document.getElementById('canvas');
@@ -156,68 +240,16 @@
             }
         });
 
-        // Función para calcular la distancia entre dos puntos de contacto
+        // Calcular la distancia entre dos puntos (usado para el gesto de pinza)
         function getDistance(touch1, touch2) {
             var dx = touch1.clientX - touch2.clientX;
             var dy = touch1.clientY - touch2.clientY;
             return Math.sqrt(dx * dx + dy * dy);
         }
 
-        // Inicializar la gráfica al cargar la página
-        window.onload = graficar;
+        // Ajustar el tamaño del canvas al cargar y al redimensionar la ventana
+        window.onload = ajustarCanvas;
+        window.onresize = ajustarCanvas;
     </script>
-    
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            background: linear-gradient(to bottom, #ffffff, #d1e0ff);
-            margin: 0;
-            position: relative;
-        }
-        canvas {
-            border: 1px solid black;
-            background-color: rgba(255, 255, 255, 0.8);
-        }
-        .easter-egg {
-            position: absolute;
-            width: 100px;
-            opacity: 0.001;
-            top: 5%;
-            left: 90%;
-            transition: opacity 0.3s;
-        }
-        .easter-egg:hover {
-            opacity: 1;
-        }
-        input, button {
-            margin: 10px;
-            padding: 5px;
-        }
-        .input-neon {
-            border-radius: 20px;
-            padding: 10px;
-            border: 2px solid #008cba; /* Color celeste más oscuro */
-            background-color: transparent;
-            color: black;
-            transition: box-shadow 0.3s ease-in-out;
-        }
-        .input-neon:focus {
-            outline: none;
-            box-shadow: 0 0 10px #007ba7, 0 0 20px #007ba7, 0 0 30px #007ba7; /* Efecto de neón celeste más oscuro */
-        }
-        button {
-            background-color: #008cba;
-            color: white;
-            border-radius: 20px;
-            padding: 10px 20px;
-            border: none;
-            cursor: pointer;
-            transition: background-color 0.3s;
-        }
-        button:hover {
-            background-color: #007ba7;
-        }
-    </style>
 </body>
 </html>
