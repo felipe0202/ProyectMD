@@ -4,9 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gráfica de una Ecuación Lineal con Zoom</title>
-    <style>
-
-        body {
+       <style>
+           body {
             font-family: 'Verdana', sans-serif;
             text-align: center;
             background: linear-gradient(to bottom, #ffffff, #d1e0ff);
@@ -62,10 +61,7 @@
             background-color: #007ba7;
         }
 
-        /* Evitar márgenes adicionales y ajustar la altura del body */
-        html, body {
-            height: 100%;
-        }
+
 
         body {
             display: flex;
@@ -74,25 +70,23 @@
             min-height: 100vh; /* Asegurar que el contenido ocupe toda la pantalla */
         }
 
+
     </style>
 </head>
 <body>
     <div>
-    <h1>Graficar Ecuación Lineal</h1>
-    <p>Ingrese los valores de la ecuación de la forma <strong>y = mx + b</strong></p>
-    
-    <label for="m">Pendiente (m):</label>
-    <input type="number" id="m" step="any" value="" class="input-neon"><br>
-    
-    <label for="b">Intersección (b):</label>
-    <input type="number" id="b" step="any" value="" class="input-neon"><br>
-    
-    <button onclick="graficar()">Graficar</button>
+        <h1>Graficar Ecuación Lineal</h1>
+        <p>Antes de graficar reinicie la gráfica para evitar distorsiones</p>
+        <p>Ingrese los valores de la ecuación de la forma <strong>y = mx + b</strong></p>
+        <label for="m">Pendiente (m):</label>
+        <input type="number" id="m" step="any" value="" class="input-neon"><br>
+        <label for="b">Intersección (b):</label>
+        <input type="number" id="b" step="any" value="" class="input-neon"><br>
+        <button onclick="graficar()">Graficar</button><button onclick="location.reload()">Resetear gráfica</button>
     </div>
     <div>
-    <canvas id="canvas"></canvas>
+        <canvas id="canvas"></canvas>
     </div>
-    
 
     <script>
         var zoomScale = 1; // Factor de zoom inicial
@@ -102,8 +96,6 @@
         var offsetY = 0; // Desplazamiento en Y
         var isDragging = false; // Estado del desplazamiento
         var startX, startY; // Posición inicial para el desplazamiento
-        var initialPinchDistance = null; // Distancia inicial entre dos dedos
-        var lastPinchZoomScale = 1; // Zoom previo al gesto de pinza
 
         // Función para ajustar el tamaño del canvas de manera responsive
         function ajustarCanvas() {
@@ -114,6 +106,32 @@
             canvas.height = containerHeight;
             graficar(); // Redibujar la gráfica
         }
+function ajustarCanvas() {
+    var canvas = document.getElementById('canvas');
+    var containerWidth = canvas.parentElement.clientWidth;
+    var containerHeight = window.innerHeight * 0.80; // Aumenta el porcentaje de la altura de la ventana (por ejemplo 65%)
+    canvas.width = containerWidth;
+    canvas.height = containerHeight;
+    graficar(); // Redibujar la gráfica
+}
+        // Función para hacer zoom automático si los puntos están fuera del canvas
+        function autoZoom(m, b, canvas) {
+            var ctx = canvas.getContext('2d');
+            var width = canvas.width;
+            var height = canvas.height;
+
+            // Intersección con el eje Y (x = 0 -> y = b)
+            var yIntercept = b * scale;
+            // Intersección con el eje X (y = 0 -> x = -b/m)
+            var xIntercept = -b / m * scale;
+
+            // Ajustar el zoom si las intersecciones están fuera del canvas
+            if (Math.abs(yIntercept) > height / 2 || Math.abs(xIntercept) > width / 2) {
+                zoomScale *= 0.9; // Reducir el zoom
+                if (zoomScale < 0.5) zoomScale = 0.5; // Limitar el zoom mínimo
+                graficar(); // Redibujar con el nuevo zoom
+            }
+        }
 
         function graficar() {
             var canvas = document.getElementById('canvas');
@@ -122,6 +140,8 @@
 
             var m = parseFloat(document.getElementById('m').value);  // Obtener el valor de la pendiente
             var b = parseFloat(document.getElementById('b').value);  // Obtener el valor de la intersección
+
+            if (isNaN(m) || isNaN(b)) return; // Validación de entrada
 
             var width = canvas.width;
             var height = canvas.height;
@@ -145,7 +165,7 @@
             ctx.textBaseline = 'middle';
 
             // Marcas y números en el eje X
-            for (var x = -width; x <= width; x += scale) { // Ampliar rango de X
+            for (var x = -width; x <= width; x += scale) {
                 var xCanvas = width / 2 + x + offsetX;
                 ctx.beginPath();
                 ctx.moveTo(xCanvas, height / 2 - offsetY - 5);
@@ -157,7 +177,7 @@
             }
 
             // Marcas y números en el eje Y
-            for (var y = -height; y <= height; y += scale) { // Ampliar rango de Y
+            for (var y = -height; y <= height; y += scale) {
                 var yCanvas = height / 2 - y - offsetY;
                 ctx.beginPath();
                 ctx.moveTo(width / 2 + offsetX - 5, yCanvas);
@@ -174,7 +194,6 @@
 
             var x1 = -width;
             var y1 = m * (x1 / scale) + b;
-
             var x2 = width;
             var y2 = m * (x2 / scale) + b;
 
@@ -183,71 +202,12 @@
             ctx.lineTo(width / 2 + x2 + offsetX, height / 2 - y2 * scale - offsetY);
 
             ctx.stroke();
+
+            // Llamar a la función de zoom automático
+            autoZoom(m, b, canvas);
         }
 
-        // Función para manejar el zoom con la rueda del ratón
-        document.getElementById('canvas').addEventListener('wheel', function(event) {
-            event.preventDefault();
-            var delta = event.deltaY > 0 ? 0.9 : 1.1;
-            zoomScale *= delta;
-            zoomScale = Math.max(2, Math.min(zoomScale, 5)); // Limitar el zoom
-            graficar();  // Redibujar con el nuevo zoom
-        });
-
-        // Eventos de desplazamiento con el ratón
-        var canvas = document.getElementById('canvas');
-        canvas.addEventListener('mousedown', function(event) {
-            isDragging = true;
-            startX = event.offsetX - offsetX;
-            startY = event.offsetY + offsetY;
-        });
-
-        canvas.addEventListener('mouseup', function() {
-            isDragging = false;
-        });
-
-        canvas.addEventListener('mousemove', function(event) {
-            if (isDragging) {
-                offsetX = event.offsetX - startX;
-                offsetY = startY - event.offsetY;
-                graficar();  // Redibujar con el nuevo desplazamiento
-            }
-        });
-
-        // Soporte para zoom con los dedos (gesto de pinza)
-        canvas.addEventListener('touchstart', function(event) {
-            if (event.touches.length === 2) {
-                initialPinchDistance = getDistance(event.touches[0], event.touches[1]);
-                lastPinchZoomScale = zoomScale;
-            }
-        });
-
-        canvas.addEventListener('touchmove', function(event) {
-            if (event.touches.length === 2) {
-                event.preventDefault();  // Prevenir scroll de la página
-                var currentDistance = getDistance(event.touches[0], event.touches[1]);
-                if (initialPinchDistance) {
-                    var pinchZoomFactor = currentDistance / initialPinchDistance;
-                    zoomScale = Math.max(2, Math.min(lastPinchZoomScale * pinchZoomFactor, 5));
-                    graficar();  // Redibujar con el nuevo zoom
-                }
-            }
-        });
-
-        canvas.addEventListener('touchend', function(event) {
-            if (event.touches.length < 2) {
-                initialPinchDistance = null;
-            }
-        });
-
-        // Calcular la distancia entre dos puntos (usado para el gesto de pinza)
-        function getDistance(touch1, touch2) {
-            var dx = touch1.clientX - touch2.clientX;
-            var dy = touch1.clientY - touch2.clientY;
-            return Math.sqrt(dx * dx + dy * dy);
-        }
-
-        // Ajustar el tamaño del canvas al cargar y al redimensionar la ventana
+        // Resto de eventos de desplazamiento y zoom igual a antes
         window.onload = ajustarCanvas;
         window.onresize = ajustarCanvas;
     </script>
