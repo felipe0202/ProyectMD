@@ -4,100 +4,33 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gráfica de una Ecuación Lineal con Zoom</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            background-image: url('fondo.jpg');
-            background-size: cover; /* Ajustar para que cubra todo el fondo */
-            background-position: center;
-            margin: 0;
-            min-height: 100vh; /* Ocupa toda la altura de la ventana */
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-        }
-
-        h1, p {
-            margin: 10px 0;
-        }
-
-        canvas {
-            border: 1px solid black;
-            background-color: rgba(255, 255, 255, 0.8);
-            max-width: 90vw; /* Asegura que el canvas no exceda el ancho de la ventana */
-            max-height: 90vh; /* Asegura que el canvas no exceda la altura de la ventana */
-        }
-
-        .easter-egg {
-            position: absolute;
-            width: 100px;
-            opacity: 0.001;
-            top: 5%;
-            left: 90%;
-            transition: opacity 0.3s;
-        }
-
-        .easter-egg:hover {
-            opacity: 1;
-        }
-
-        input, button {
-            margin: 10px;
-            padding: 5px;
-            font-size: 1rem;
-        }
-
-        @media (max-width: 768px) {
-            input, button {
-                font-size: 0.9rem;
-                margin: 5px;
-            }
-
-            h1 {
-                font-size: 1.5rem;
-            }
-
-            p {
-                font-size: 1rem;
-            }
-        }
-    </style>
+    
 </head>
 <body>
     <h1>Graficar Ecuación Lineal</h1>
     <p>Ingrese los valores de la ecuación de la forma <strong>y = mx + b</strong></p>
     
     <label for="m">Pendiente (m):</label>
-    <input type="number" id="m" step="any" value=""><br>
+    <input type="number" id="m" step="any" value="" class="input-neon"><br>
     
     <label for="b">Intersección (b):</label>
-    <input type="number" id="b" step="any" value=""><br>
+    <input type="number" id="b" step="any" value="" class="input-neon"><br>
     
     <button onclick="graficar()">Graficar</button>
     
-    <canvas id="canvas"></canvas>
+    <canvas id="canvas" width="600" height="600"></canvas>
     
-    <img src="easter-egg.png" class="easter-egg" alt="Easter Egg">
-
     <script>
         var zoomScale = 1; // Factor de zoom inicial
         var baseScale = 20; // Escala base sin zoom
         var scale = baseScale; // Escala actual
         var offsetX = 0; // Desplazamiento en X
         var offsetY = 0; // Desplazamiento en Y
+        var isDragging = false; // Estado del desplazamiento
+        var startX, startY; // Posición inicial para el desplazamiento
+        var initialPinchDistance = null; // Distancia inicial entre dos dedos
+        var lastPinchZoomScale = 1; // Zoom previo al gesto de pinza
 
-        function adjustCanvasSize() {
-            var canvas = document.getElementById('canvas');
-            canvas.width = Math.min(window.innerWidth * 0.9, 600); // Ancho relativo al tamaño de la ventana
-            canvas.height = Math.min(window.innerHeight * 0.6, 600); // Alto relativo
-            graficar(); // Redibujar cada vez que cambie el tamaño
-        }
-
-        window.onresize = adjustCanvasSize;
-
-        // Función para dibujar la gráfica
         function graficar() {
             var canvas = document.getElementById('canvas');
             var ctx = canvas.getContext('2d');
@@ -168,26 +101,17 @@
             ctx.stroke();
         }
 
-        // Inicializar la gráfica al cargar la página y ajustar el tamaño
-        window.onload = function() {
-            adjustCanvasSize();
-            graficar();
-        };
-
-        // Función para manejar el zoom y desplazamiento con la rueda del ratón
+        // Función para manejar el zoom con la rueda del ratón
         document.getElementById('canvas').addEventListener('wheel', function(event) {
-            event.preventDefault();  // Prevenir el scroll de la página
-            var delta = event.deltaY > 0 ? 0.9 : 1.1;  // Ajuste del factor de zoom
+            event.preventDefault();
+            var delta = event.deltaY > 0 ? 0.9 : 1.1;
             zoomScale *= delta;
-            if (zoomScale < 2) zoomScale = 2;  // Evitar zoom demasiado pequeño
-            if (zoomScale > 5) zoomScale = 5;  // Evitar zoom demasiado grande
+            zoomScale = Math.max(2, Math.min(zoomScale, 5)); // Limitar el zoom
             graficar();  // Redibujar con el nuevo zoom
         });
 
-        // Función para manejar el desplazamiento
-        var isDragging = false;
-        var startX, startY;
-
+        // Eventos de desplazamiento con el ratón
+        var canvas = document.getElementById('canvas');
         canvas.addEventListener('mousedown', function(event) {
             isDragging = true;
             startX = event.offsetX - offsetX;
@@ -205,6 +129,95 @@
                 graficar();  // Redibujar con el nuevo desplazamiento
             }
         });
+
+        // Soporte para zoom con los dedos (gesto de pinza)
+        canvas.addEventListener('touchstart', function(event) {
+            if (event.touches.length === 2) {
+                initialPinchDistance = getDistance(event.touches[0], event.touches[1]);
+                lastPinchZoomScale = zoomScale;
+            }
+        });
+
+        canvas.addEventListener('touchmove', function(event) {
+            if (event.touches.length === 2) {
+                event.preventDefault();  // Prevenir scroll de la página
+                var currentDistance = getDistance(event.touches[0], event.touches[1]);
+                if (initialPinchDistance) {
+                    var pinchZoomFactor = currentDistance / initialPinchDistance;
+                    zoomScale = Math.max(2, Math.min(lastPinchZoomScale * pinchZoomFactor, 5));
+                    graficar();  // Redibujar con el nuevo zoom
+                }
+            }
+        });
+
+        canvas.addEventListener('touchend', function(event) {
+            if (event.touches.length < 2) {
+                initialPinchDistance = null;
+            }
+        });
+
+        // Función para calcular la distancia entre dos puntos de contacto
+        function getDistance(touch1, touch2) {
+            var dx = touch1.clientX - touch2.clientX;
+            var dy = touch1.clientY - touch2.clientY;
+            return Math.sqrt(dx * dx + dy * dy);
+        }
+
+        // Inicializar la gráfica al cargar la página
+        window.onload = graficar;
     </script>
+    
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background: linear-gradient(to bottom, #ffffff, #d1e0ff);
+            margin: 0;
+            position: relative;
+        }
+        canvas {
+            border: 1px solid black;
+            background-color: rgba(255, 255, 255, 0.8);
+        }
+        .easter-egg {
+            position: absolute;
+            width: 100px;
+            opacity: 0.001;
+            top: 5%;
+            left: 90%;
+            transition: opacity 0.3s;
+        }
+        .easter-egg:hover {
+            opacity: 1;
+        }
+        input, button {
+            margin: 10px;
+            padding: 5px;
+        }
+        .input-neon {
+            border-radius: 20px;
+            padding: 10px;
+            border: 2px solid #008cba; /* Color celeste más oscuro */
+            background-color: transparent;
+            color: black;
+            transition: box-shadow 0.3s ease-in-out;
+        }
+        .input-neon:focus {
+            outline: none;
+            box-shadow: 0 0 10px #007ba7, 0 0 20px #007ba7, 0 0 30px #007ba7; /* Efecto de neón celeste más oscuro */
+        }
+        button {
+            background-color: #008cba;
+            color: white;
+            border-radius: 20px;
+            padding: 10px 20px;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #007ba7;
+        }
+    </style>
 </body>
 </html>
