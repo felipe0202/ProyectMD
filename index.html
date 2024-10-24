@@ -3,33 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gráfica de una Ecuación Lineal con Zoom</title>
-       <style>
-           body {
-            font-family: 'Verdana', sans-serif;
+    <title>Graficar Ecuación Lineal con Zoom</title>
+    <style>
+        body {
+            sfont-family: 'Verdana', sans-serif;
             text-align: center;
             background: linear-gradient(to bottom, #ffffff, #d1e0ff);
             margin: 0;
             color: #004080; /* Azul suave para contrastar */
-            position: relative;
-            overflow-x: hidden; /* Evitar scroll lateral innecesario */
         }
 
         h1 {
-            color: #003366; /* Azul oscuro para mayor contraste */
+            color: #333;
         }
-
-        canvas {
-            border: 1px solid black;
-            background-color: rgba(255, 255, 255, 0.8);
-            display: block;
-            margin: 0 auto; /* Centrar el canvas */
-            max-width: 80%; /* Limitar el ancho máximo en pantallas grandes */
-            height: auto; /* Mantener la proporción del canvas */
-            margin-bottom: 20px; /* Evitar que toque el borde inferior */
-        }
-
-        input, button {
+         input, button {
             margin: 10px;
             padding: 5px;
             color: #004080; /* Azul suave */
@@ -62,154 +49,119 @@
         }
 
 
-
-        body {
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-start;
-            min-height: 100vh; /* Asegurar que el contenido ocupe toda la pantalla */
+        canvas {
+            border: 1px solid black;
+            background-color: white;
+            display: block;
+            margin: 0 auto;
+            width: 80vw;
+            height: 60vh;
         }
 
 
     </style>
 </head>
 <body>
+    <h1>Graficar Ecuación Lineal: y = mx + b</h1>
+
     <div>
-        <h1>Graficar Ecuación Lineal</h1>
         <p>Antes de graficar reinicie la gráfica para evitar distorsiones</p>
-        <p>Ingrese los valores de la ecuación de la forma <strong>y = mx + b</strong></p>
         <label for="m">Pendiente (m):</label>
-        <input type="number" id="m" step="any" value="" class="input-neon"><br>
+        <input type="number" id="m"  class="input-neon" step="any" value="1"><br>
         <label for="b">Intersección (b):</label>
-        <input type="number" id="b" step="any" value="" class="input-neon"><br>
+        <input type="number" id="b"  class="input-neon" step="any" value="0"><br>
         <button onclick="graficar()">Graficar</button><button onclick="location.reload()">Resetear gráfica</button>
     </div>
-    <div>
-        <canvas id="canvas"></canvas>
-    </div>
+
+    <canvas id="canvas"></canvas>
 
     <script>
-        var zoomScale = 1; // Factor de zoom inicial
-        var baseScale = 20; // Escala base sin zoom
-        var scale = baseScale; // Escala actual
-        var offsetX = 0; // Desplazamiento en X
-        var offsetY = 0; // Desplazamiento en Y
-        var isDragging = false; // Estado del desplazamiento
-        var startX, startY; // Posición inicial para el desplazamiento
-
-        // Función para ajustar el tamaño del canvas de manera responsive
-        function ajustarCanvas() {
-            var canvas = document.getElementById('canvas');
-            var containerWidth = canvas.parentElement.clientWidth;
-            var containerHeight = window.innerHeight * 0.6; // 60% de la altura de la ventana
-            canvas.width = containerWidth;
-            canvas.height = containerHeight;
-            graficar(); // Redibujar la gráfica
-        }
-function ajustarCanvas() {
-    var canvas = document.getElementById('canvas');
-    var containerWidth = canvas.parentElement.clientWidth;
-    var containerHeight = window.innerHeight * 0.80; // Aumenta el porcentaje de la altura de la ventana (por ejemplo 65%)
-    canvas.width = containerWidth;
-    canvas.height = containerHeight;
-    graficar(); // Redibujar la gráfica
-}
-        // Función para hacer zoom automático si los puntos están fuera del canvas
-        function autoZoom(m, b, canvas) {
-            var ctx = canvas.getContext('2d');
-            var width = canvas.width;
-            var height = canvas.height;
-
-            // Intersección con el eje Y (x = 0 -> y = b)
-            var yIntercept = b * scale;
-            // Intersección con el eje X (y = 0 -> x = -b/m)
-            var xIntercept = -b / m * scale;
-
-            // Ajustar el zoom si las intersecciones están fuera del canvas
-            if (Math.abs(yIntercept) > height / 2 || Math.abs(xIntercept) > width / 2) {
-                zoomScale *= 0.9; // Reducir el zoom
-                if (zoomScale < 0.5) zoomScale = 0.5; // Limitar el zoom mínimo
-                graficar(); // Redibujar con el nuevo zoom
-            }
-        }
+        var scale = 20; // Escala base
+        var zoomOutFactor = 0.9; // Factor de alejamiento para ajustar el zoom
 
         function graficar() {
+            var m = parseFloat(document.getElementById('m').value);
+            var b = parseFloat(document.getElementById('b').value);
+
             var canvas = document.getElementById('canvas');
             var ctx = canvas.getContext('2d');
             ctx.clearRect(0, 0, canvas.width, canvas.height);  // Limpiar el canvas
 
-            var m = parseFloat(document.getElementById('m').value);  // Obtener el valor de la pendiente
-            var b = parseFloat(document.getElementById('b').value);  // Obtener el valor de la intersección
-
-            if (isNaN(m) || isNaN(b)) return; // Validación de entrada
-
+            canvas.width = canvas.clientWidth;
+            canvas.height = canvas.clientHeight;
             var width = canvas.width;
             var height = canvas.height;
 
-            // Ajustar la escala actual con el zoom
-            scale = baseScale * zoomScale;
-
-            // Dibujar el eje X y el eje Y
+            // Dibujar los ejes
             ctx.beginPath();
-            ctx.moveTo(0, height / 2 - offsetY);
-            ctx.lineTo(width, height / 2 - offsetY);  // Eje X
-            ctx.moveTo(width / 2 + offsetX, 0);
-            ctx.lineTo(width / 2 + offsetX, height);  // Eje Y
+            ctx.moveTo(0, height / 2); // Eje X
+            ctx.lineTo(width, height / 2);
+            ctx.moveTo(width / 2, 0); // Eje Y
+            ctx.lineTo(width / 2, height);
             ctx.strokeStyle = 'black';
             ctx.stroke();
 
-            // Dibujar marcas y números en el eje X y Y
-            ctx.font = '12px Arial';
-            ctx.fillStyle = 'black';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
+            // Ajustar la escala para que se enfoque en la intersección 'b' en el eje Y
+            ajustarZoomRespectoB(b, height);
 
-            // Marcas y números en el eje X
-            for (var x = -width; x <= width; x += scale) {
-                var xCanvas = width / 2 + x + offsetX;
+            var incremento = (Math.abs(b) > 15) ? 5 : 1;
+
+            // Dibujar marcas en el eje X
+            for (var x = -Math.floor(width / 2 / scale); x <= Math.floor(width / 2 / scale); x++) {
+                if (x === 0) continue;
+                var valorX = x * incremento;
                 ctx.beginPath();
-                ctx.moveTo(xCanvas, height / 2 - offsetY - 5);
-                ctx.lineTo(xCanvas, height / 2 - offsetY + 5);
+                ctx.moveTo(width / 2 + valorX * scale, height / 2 - 5);
+                ctx.lineTo(width / 2 + valorX * scale, height / 2 + 5);
                 ctx.stroke();
-                if (x !== 0) {
-                    ctx.fillText((x / scale).toFixed(0), xCanvas, height / 2 - offsetY + 15);
-                }
+                ctx.fillText(valorX, width / 2 + valorX * scale, height / 2 + 20);
             }
 
-            // Marcas y números en el eje Y
-            for (var y = -height; y <= height; y += scale) {
-                var yCanvas = height / 2 - y - offsetY;
+            // Dibujar marcas en el eje Y
+            for (var y = -Math.floor(height / 2 / scale); y <= Math.floor(height / 2 / scale); y++) {
+                if (y === 0) continue;
+                var valorY = y * incremento;
                 ctx.beginPath();
-                ctx.moveTo(width / 2 + offsetX - 5, yCanvas);
-                ctx.lineTo(width / 2 + offsetX + 5, yCanvas);
+                ctx.moveTo(width / 2 - 5, height / 2 - valorY * scale);
+                ctx.lineTo(width / 2 + 5, height / 2 - valorY * scale);
                 ctx.stroke();
-                if (y !== 0) {
-                    ctx.fillText((y / scale).toFixed(0), width / 2 + offsetX - 15, yCanvas);
-                }
+                ctx.fillText(valorY, width / 2 + 20, height / 2 - valorY * scale);
             }
 
-            // Dibujar la ecuación lineal y = mx + b
+            // Dibujar la función lineal: y = mx + b
             ctx.beginPath();
             ctx.strokeStyle = 'red';
 
-            var x1 = -width;
+            var x1 = -width / 2;
             var y1 = m * (x1 / scale) + b;
-            var x2 = width;
+            var x2 = width / 2;
             var y2 = m * (x2 / scale) + b;
 
-            // Ajustar las coordenadas al canvas
-            ctx.moveTo(width / 2 + x1 + offsetX, height / 2 - y1 * scale - offsetY);
-            ctx.lineTo(width / 2 + x2 + offsetX, height / 2 - y2 * scale - offsetY);
-
+            ctx.moveTo(width / 2 + x1, height / 2 - y1 * scale);
+            ctx.lineTo(width / 2 + x2, height / 2 - y2 * scale);
             ctx.stroke();
-
-            // Llamar a la función de zoom automático
-            autoZoom(m, b, canvas);
         }
 
-        // Resto de eventos de desplazamiento y zoom igual a antes
-        window.onload = ajustarCanvas;
-        window.onresize = ajustarCanvas;
+        function ajustarZoomRespectoB(b, height) {
+            // Ajustar el zoom en función de la intersección b + 5, para que siempre esté visible en el canvas
+            var maxY = Math.abs(b + 5);
+            while (maxY * scale > height / 2) {
+                scale *= zoomOutFactor;
+            }
+        }
+
+        window.onload = function() {
+            var canvas = document.getElementById('canvas');
+            canvas.width = canvas.clientWidth;
+            canvas.height = canvas.clientHeight;
+        };
+
+        window.onresize = function() {
+            var canvas = document.getElementById('canvas');
+            canvas.width = canvas.clientWidth;
+            canvas.height = canvas.clientHeight;
+            graficar(); // Redibujar la gráfica cuando se ajusta el tamaño de la ventana
+        };
     </script>
 </body>
 </html>
